@@ -1,4 +1,4 @@
-function [control_params,params] = Snowflow_model_static_and_control_parameters(basin, run_sce, years, flag_SWE, flag_Q)
+function [control_params,params] = Snowflow_model_static_and_control_parameters(basin, run_sce, scenario, years, flag_SWE, flag_Q)
 % Description: This function contains all static/control parameters needed for a 
 % simulation.
 
@@ -30,7 +30,7 @@ params.band_val = 50;
 control_params.validation_flag_SWE = flag_SWE; %(0 -> no data available)
 control_params.validation_flag_Q = flag_Q;
 control_params.glacier_data = 1;
-control_params.scenario = 'RCP45';
+control_params.scenario = scenario;
 
 %% Simulation control parameters specification in "control_params" structured array
 
@@ -69,8 +69,8 @@ control_params.date = date_data;
 %specify input directory
 control_params.input_dir = '/Users/gcortes/Dropbox/project_Anpac/';
 % Specify output filename
-control_params.output_filename = ['/Users/gcortes/Dropbox/project_Anpac/test_outputs/' control_params.basin '_' control_params.run '.mat'];
-control_params.output_filename_fig = ['/Users/gcortes/Dropbox/project_Anpac/test_outputs/' control_params.basin '_' control_params.run '_results.fig'];
+control_params.output_filename = ['/Users/gcortes/Dropbox/project_Anpac/test_outputs/' control_params.basin '_' control_params.scenario '.mat'];
+control_params.output_filename_fig = ['/Users/gcortes/Dropbox/project_Anpac/test_outputs/' control_params.basin '_' control_params.scenario '_results.fig'];
 
 %% Specify location of static and glacier data (in meters!!). 
 control_params.dem_filename = [control_params.input_dir 'data_dem/data_' control_params.basin '.mat'];
@@ -83,7 +83,7 @@ control_params.dem_filename = [control_params.input_dir 'data_dem/data_' control
 % Air temp.: (C); variable "Tair"
 
 control_params.met_data_filename_Tair = [control_params.input_dir 'data_hydrometeo/data_t/termas_el_flaco_' control_params.scenario '.mat'];
-control_params.Ta_gage_elev = 2650+192;
+control_params.Ta_gage_elev = 2650;
 control_params.met_data_filename_PPT = [control_params.input_dir 'data_hydrometeo/data_precip/pp_la_rufina_' control_params.scenario '.mat'];
 control_params.glacier_area = [control_params.input_dir 'data_glacier/glacier_' control_params.basin '.mat'];
 
@@ -126,7 +126,7 @@ params.UTC = 0-params.time_zone_shift:23-params.time_zone_shift;
 
 % Air properties 
 params.LapseRateTair = -5.2;    % Air temperature lapse rate (K/km) for mountainuous regions
-params.precip_scaling = 1.3;    % Precipitation scaling coefficient
+params.precip_scaling = 1.4;    % Precipitation scaling coefficient
 
 % Water properties
 params.rho_water = 1; % liquid water density (g/cm^3);

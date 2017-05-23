@@ -1,4 +1,4 @@
-function Snowflow_model_driver(basin, run_sce, years, flag_SWE, flag_Q)
+function Snowflow_model_driver(basin, run_sce, scenario, years, flag_SWE, flag_Q)
 
 close all;
 addpath('/Users/gcortes/Dropbox/snowflow');
@@ -19,7 +19,7 @@ addpath(genpath('/Users/gcortes/Documents/MATLAB/'));
 % Snowflow_model_static_and_control_parameters.m file. 
 
 %% Load all static/control parameters
-[control_params, params] = Snowflow_model_static_and_control_parameters(basin, run_sce, years, flag_SWE, flag_Q);
+[control_params, params] = Snowflow_model_static_and_control_parameters(basin, run_sce, scenario, years, flag_SWE, flag_Q);
 
 %% Initialize key states, arrays, divide into elevation bands ...
 [SWE_reanalysis, Streamflow, forcings, control_params, params, elev_bands, A_band, A_glacier, A_non_glacier, mc, lat, lon, weights, glacier] = ...
@@ -164,7 +164,7 @@ for n_sim = 1:n_iter;
              end;
 
             P_snow(n, tt) = (1 - mc(n,tt)).*PPT(n,tt);
-            P_rain(n, tt) = PPT(n,tt)-P_snow(n,tt);
+            P_rain(n, tt) = PPT(n,tt) - P_snow(n,tt);
 
     %% Run the snow model(DDM)function only if snow is on the ground or falling
 
@@ -328,7 +328,7 @@ disp('Snowflow simulation completed successfully.')
 if control_params.Monte_Carlo == 0
     %% Save key outputs  
     date_data = control_params.date;
-    
+    if ~exist('A_glacier_band', 'var'); A_glacier_band = 0; A_non_glacier_band = 0; end;
     eval(['save ' control_params.output_filename ' control_params date_data Outflow' ' V_glacier_final' ' A_glacier_final' ' delta_V_glacier' ' delta_A_glacier' ...
         ' delta_V_ice' ' delta_M_water' ' delta_V_SWE' ' delta_V_liq' ' Annual_VQ_ice_glacier' ' Annual_VQ_snow_glacier' ' Annual_VP_rain_glacier' ...
         ' VQ_ice_glacier' ' VQ_snow_glacier' ' VP_rain_glacier' ' V_SWE' ' Z1' ' Z2' ' SWE' ' melt_snow' ' melt_ice' ' P_rain' ' P_snow' ' Surface_runoff' ...

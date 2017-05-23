@@ -35,11 +35,16 @@ for n = 1:n_bands
     A = find(mask(:) == 1 & dem(:) > elev_threshold(n) & dem(:) <= elev_threshold(n+1));
     A_band(n) = length(A)*res^2; % m^2
     
-    if strcmp(control_params.scenario, 'observed');
+    if strcmp(control_params.run, 'historical');
         G = find(glacier_ini(A) > 0);
     else
-        G = find(glacier_fin(A) > 0);
+        if strcmp(control_params.run, 'no_glaciers');
+            G = [];
+        else
+            G = find(glacier_fin(A) > 0);
+        end;
     end;
+    
     
     A_glacier(n) = length(G)*res^2;
     A_non_glacier(n) = A_band(n) - A_glacier(n);
