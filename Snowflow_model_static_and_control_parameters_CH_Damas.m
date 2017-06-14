@@ -1,4 +1,4 @@
-function [control_params,params] = Snowflow_model_static_and_control_parameters(basin, run_sce, scenario, years, flag_SWE, flag_Q, precip_scaling)
+function [control_params,params] = Snowflow_model_static_and_control_parameters_CH_Damas(basin, run_sce, scenario, years, flag_SWE, flag_Q, precip_scaling)
 % Description: This function contains all static/control parameters needed for a 
 % simulation.
 
@@ -137,11 +137,12 @@ params.rho_ice = 0.917; % liquid water density (g/cm^3);
 params.Z1_init  = 0;     % Initial Z1 (-)
 params.Z2_init  = 0;     % Initial Z2 (-)
 params.k        = 1;          % Loss coefficient
+params.kPET = 1;
 params.K_SW     = .5;      % Soil water (rootzone) conductivity (m/day)
-params.K_DW     = .05;      % Deep water conductivity (m/day)
-params.f        = 0.2;           % prefered flow direcion (1 = horz., 0 = ver.) (-)
+params.K_DW     = 0.5;      % Deep water conductivity (m/day), increased value lowers estiaje streamflow
+params.f        = 0.1;           % prefered flow direcion (1 = horz., 0 = ver.) (-)
 params.Kc       = 1.1;          % Crop coef. (-)
-params.SW       = 1;           % Soil water capacity (m)
+params.SW       = 2;           % Soil water capacity (m)
 params.DW       = 3;            % Deep water capacity (m), the larger, the more damped are flows throuhgout the year.
 params.RRF      = 1;        % Runoff resistance factor (-), higher values result in lower streamflow
 
@@ -151,16 +152,16 @@ params.a_snow   = 5;        % Degree-Day-Model coef. (1.3-11.6 mm/day/K)
 params.a_ice    = 5;           % Degree-Day-Model coef. (5.5-18.6 mm/day/K)
 
 params.MF           = 0;              % mm/day/K, Pellicciotti et al 0.082 * 24
-params.RFsnow       = 0.0250;    % 0.00052 * 24 m^2mm/day/K
-params.RFice        = 0.0200;    % 0.00106 * 24 m^2mm/day/K
+params.RFsnow       = 0.0300;    % 0.00052 * 24 m^2mm/day/K
+params.RFice        = 0.0300;    % 0.00106 * 24 m^2mm/day/K
 
 params.RFsnow_sec   = 0.000;    % 0.00052 * 24 m^2mm/day/K
 params.RFice_sec    = 0.000;    % 0.00106 m^2mm/day/K
 
-params.T_snowmelt   = 279;  % Snowmelt temp. (K, corresponds to 1.45 C used by Condom et al. 2011)
+params.T_snowmelt   = 278;  % Snowmelt temp. (K, corresponds to 1.45 C used by Condom et al. 2011)
 params.T_icemelt    = 275;   % Icemelt temp. (K)
 
-params.T_S          = 279;           % Freezing point (K)
+params.T_S          = 278;           % Freezing point (K)
 params.T_L          = 285;           % Melting point (K) 
 
 % Glacier geometry parameters (-), see Bahr et al. 1997
