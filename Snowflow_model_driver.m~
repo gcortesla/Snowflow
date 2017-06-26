@@ -246,7 +246,7 @@ for n_sim = 1:n_iter;
                 
                 delta_V_SWE(n, tt/control_params.n_year) = V_SWE(n, Last_SWE(end));
                 SWE(n, tt) = SWE(n, tt)*A_non_glacier(n)/A_band(n); %Reduce SWE by the volume that was transfered to the glacier
-                SWE_old(n) = SWE(n ,tt);
+                SWE_old
                 % total net accumulation of water over the glacier:
                 delta_M_water(n, tt/control_params.n_year) = (delta_V_liq(n, tt/control_params.n_year) + delta_V_SWE(n, tt/control_params.n_year))*params.rho_water*100^3; % (g)
                 

@@ -1,5 +1,5 @@
-function [SWE, Streamflow,forcings,control_params,params,elev_bands,A_band,A_glacier,A_non_glacier,mc,lat,lon, weights, glacier]= ...
-    initialize_model(control_params, params)
+function [SWE, Streamflow, forcings, control_params, params, elev_bands, A_band, A_glacier, A_non_glacier, mc, lat, lon, weights, glacier] = ...
+    initialize_model(control_params, params, band_choice)
 
 %% Static data first
 load(control_params.dem_filename);
@@ -21,14 +21,30 @@ X = nanmean(easting);
 Y = nanmean(northing);
 [lat, lon] = minvtran(utmstruct,X,Y);
 
-band_val = params.band_val;
-%n_bands = params.n_band;
-elev_dif = max(dem(:)) - min(dem(:));
-n_bands = floor(elev_dif/band_val);
-elev_threshold = min(dem(:)):band_val:max(dem(:));
+if band_choice == 1; %equal elevation bands
+    
+    band_val = params.band_val;
+    %n_bands = params.n_band;
+    elev_dif = max(dem(:)) - min(dem(:));
+    n_bands = floor(elev_dif/band_val);
+    elev_threshold = min(dem(:)):band_val:max(dem(:));
+    
+    for n = 1:n_bands
+        elev_bands(n) = (elev_threshold(n)+elev_threshold(n+1))*0.5;
+    end;
+    
+else %equal area bands
+    A = hist(dem(:), min(dem(:)):1:max(dem(:)));
+    B = cumsum(A)/nansum(A);
+    elevs = min(dem(:)):1:max(dem(:));
+    limits = 0.01:0.01:1.01; % 1% area each band
+    for n = 1:101; elev_threshold(n) = elevs(max(find(B<limits(n)))); end;
+    n_bands = 100;
+    
+    for n = 1:n_bands
+        elev_bands(n) = (elev_threshold(n)+elev_threshold(n+1))*0.5;
+    end;
 
-for n = 1:n_bands
-    elev_bands(n) = (elev_threshold(n)+elev_threshold(n+1))*0.5;
 end;
 
 for n = 1:n_bands
@@ -44,8 +60,7 @@ for n = 1:n_bands
             G = find(glacier_fin(A) > 0);
         end;
     end;
-    
-    
+
     A_glacier(n) = length(G)*res^2;
     A_non_glacier(n) = A_band(n) - A_glacier(n);
     

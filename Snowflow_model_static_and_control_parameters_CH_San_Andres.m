@@ -69,8 +69,8 @@ control_params.date = date_data;
 %specify input directory
 control_params.input_dir = '/Users/gcortes/Dropbox/project_Anpac/';
 % Specify output filename
-control_params.output_filename = ['/Users/gcortes/Dropbox/project_Anpac/test_outputs/' control_params.basin '_' control_params.scenario '.mat'];
-control_params.output_filename_fig = ['/Users/gcortes/Dropbox/project_Anpac/test_outputs/' control_params.basin '_' control_params.scenario '_results.fig'];
+control_params.output_filename = ['/Users/gcortes/Dropbox/project_Anpac/test_outputs_2/' control_params.basin '_' control_params.scenario '.mat'];
+control_params.output_filename_fig = ['/Users/gcortes/Dropbox/project_Anpac/test_outputs_2/' control_params.basin '_' control_params.scenario '_results.fig'];
 
 %% Specify location of static and glacier data (in meters!!). 
 control_params.dem_filename = [control_params.input_dir 'data_dem/data_' control_params.basin '.mat'];
@@ -125,7 +125,7 @@ params.UTC = 0-params.time_zone_shift:23-params.time_zone_shift;
 
 
 % Air properties 
-params.LapseRateTair = -5.2;    % Air temperature lapse rate (K/km) for mountainuous regions
+params.LapseRateTair = -6.5;    % Air temperature lapse rate (K/km) for mountainuous regions
 params.precip_scaling = precip_scaling;    % Precipitation scaling coefficient
 
 % Water properties
@@ -137,14 +137,14 @@ params.rho_ice = 0.917; % liquid water density (g/cm^3);
 params.Z1_init  = 0;     % Initial Z1 (-)
 params.Z2_init  = 0;     % Initial Z2 (-)
 params.k        = 1;          % Loss coefficient
-params.kPET = 1;
-params.K_SW     = .5;      % Soil water (rootzone) conductivity (m/day)
+params.kPET     = 1; % Adjustement coefficient for PET
+params.K_SW     = .2;      % Soil water (rootzone) conductivity (m/day)
 params.K_DW     = .5;      % Deep water conductivity (m/day), increased value lowers estiaje streamflow
-params.f        = 0.1;           % prefered flow direcion (1 = horz., 0 = ver.) (-)
+params.f        = 0.3;           % prefered flow direcion (1 = horz., 0 = ver.) (-)
 params.Kc       = 1.1;          % Crop coef. (-)
 params.SW       = 2;           % Soil water capacity (m)
-params.DW       = 2;            % Deep water capacity (m), the larger, the more damped are flows throuhgout the year.
-params.RRF      = 1;        % Runoff resistance factor (-), higher values result in lower streamflow
+params.DW       = 3;            % Deep water capacity (m), the larger, the more damped are flows throuhgout the year.
+params.RRF      = 2;        % Runoff resistance factor (-), higher values result in lower streamflow
 
 % Snow model parameters (based on the temperature-index models from
 % Pelliciotti et al. (2005) and Monte Carlo simulations)
@@ -153,12 +153,12 @@ params.a_ice    = 5;           % Degree-Day-Model coef. (5.5-18.6 mm/day/K)
 
 params.MF           = 0;              % mm/day/K, Pellicciotti et al 0.082 * 24
 params.RFsnow       = 0.0350;    % 0.00052 * 24 m^2mm/day/K
-params.RFice        = 0.0300;    % 0.00106 * 24 m^2mm/day/K
+params.RFice        = 0.0450;    % 0.00106 * 24 m^2mm/day/K
 
 params.RFsnow_sec   = 0.000;    % 0.00052 * 24 m^2mm/day/K
 params.RFice_sec    = 0.000;    % 0.00106 m^2mm/day/K
 
-params.T_snowmelt   = 279;  % Snowmelt temp. (K, corresponds to 1.45 C used by Condom et al. 2011)
+params.T_snowmelt   = 277;  % Snowmelt temp. (K, corresponds to 1.45 C used by Condom et al. 2011)
 params.T_icemelt    = 276;   % Icemelt temp. (K)
 
 params.T_S          = 279;           % Freezing point (K)
@@ -167,6 +167,8 @@ params.T_L          = 285;           % Melting point (K)
 % Glacier geometry parameters (-), see Bahr et al. 1997
 params.glacier_b    = 1.36;  
 params.glacier_c    = 0.048;
+
+
 
 end
 
