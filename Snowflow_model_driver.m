@@ -1,7 +1,7 @@
-function Snowflow_model_driver(basin, run_sce, scenario, years, flag_SWE, flag_Q, precip_scaling, band_choice)
+function Snowflow_model_driver(basin, run_sce, scenario, year_data, flag_SWE, flag_Q, precip_scaling, band_choice)
 
 %close all;
-addpath('/Users/gcortes/Dropbox/snowflow');
+addpath(genpath('/Users/gcortes/Dropbox/flowmind/app_snowflow/'));
 addpath(genpath('/Users/gcortes/Documents/MATLAB/'));
 
 % Main model driver code for the Matlab implementation of Snowflow two-bucket
@@ -20,13 +20,14 @@ addpath(genpath('/Users/gcortes/Documents/MATLAB/'));
 
 %% Load all static/control parameters
 
-eval(['[control_params, params] = Snowflow_model_static_and_control_parameters_' basin '(basin, run_sce, scenario, years, flag_SWE, flag_Q, precip_scaling);']);
+eval(['[control_params, params] = Snowflow_model_static_and_control_parameters_' basin '(basin, basin, run_sce, scenario, year_data, flag_SWE, flag_Q, precip_scaling);']);
 
 % Load PET vals
 load /Users/gcortes/Dropbox/project_Anpac/evaporation.mat
 PET = e_val_interp/1000*params.kPET;
 
 %% Initialize key states, arrays, divide into elevation bands ...
+
 [SWE_reanalysis, Streamflow, forcings, control_params, params, elev_bands, A_band, A_glacier, A_non_glacier, mc, lat, lon, weights, glacier] = ...
     initialize_model(control_params, params, band_choice);
 
@@ -193,7 +194,7 @@ for n_sim = 1:n_iter;
                 melt_ice(n, tt)     = melt_ice(n, tt);
                 
                 %Melt of ice should consider band area covered by ice otherwise it is too large
-              %  melt_snow(n, tt)    = (A_non_glacier(n)/A_band(n)).*melt_snow(n, tt);
+                %  melt_snow(n, tt)    = (A_non_glacier(n)/A_band(n)).*melt_snow(n, tt);
                 %melt_snow(n, tt)    = (A_non_glacier(n)/A_band(n)).*melt_snow(n, tt);
             else
                 SWE(n, tt)          = 0;
@@ -209,9 +210,9 @@ for n_sim = 1:n_iter;
             VP_rain_glacier(n, tt) = (P_rain(n,tt))*A_glacier(n); % (m^3)
             
             if SWE_old(n)>0 ||  P_snow(n,tt)>0
-                V_SWE(n,tt) = SWE(n, tt)*A_glacier(n); % (m^3)
+                V_SWE(n,tt) = SWE(n, tt)*A_band(n); % (m^3)
             else
-                V_SWE(n,tt) = SWE_old(n)*A_glacier(n); % (m^3)
+                V_SWE(n,tt) = SWE_old(n)*A_band(n); % (m^3)
             end;
             
             % Rain over non-glacierized area (we assume that the rain over glacier freezes)
@@ -227,11 +228,12 @@ for n_sim = 1:n_iter;
             [Z2(n,tt), Baseflow(n,tt)] = Z2_update(Z2_old(n), Percolation(n, tt), params.K_DW, params.DW);
             
             %% Calculate total flow volume in m^3
-
-            Outflow(n,tt) = ((Surface_runoff(n,tt) + Interflow(n,tt) + Baseflow(n,tt)))*A_non_glacier(n); % (m^3)          
+            
+            Outflow(n,tt) = ((Surface_runoff(n,tt) + Interflow(n,tt) + Baseflow(n,tt)))*A_non_glacier(n); % (m^3)
             Outflow_model(n_sim,n,tt) = Outflow(n,tt);
             
             %% Perform annual mass balance to calculate changes in glacier volume
+            
             if mod(tt, control_params.n_year) == 0
                 
                 Annual_VQ_ice_glacier(n, tt/control_params.n_year)  = nansum(VQ_ice_glacier(n, tt - (control_params.n_year - 1):tt), 2);
@@ -245,8 +247,9 @@ for n_sim = 1:n_iter;
                 Last_SWE = find(~isnan(V_SWE(n, :)));
                 
                 delta_V_SWE(n, tt/control_params.n_year) = V_SWE(n, Last_SWE(end));
-                SWE(n, tt) = SWE(n, tt)*A_non_glacier(n)/A_band(n); %Reduce SWE by the volume that was transfered to the glacier
-                SWE_old(n) = SWE(n ,tt);
+                SWE(n, tt) = 0;
+                %SWE(n, tt) = SWE_old(n)*A_non_glacier(n)/A_band(n); %Reduce SWE by the volume that was transfered to the glacier
+                SWE_old(n) = SWE(n, tt);
                 % total net accumulation of water over the glacier:
                 delta_M_water(n, tt/control_params.n_year) = (delta_V_liq(n, tt/control_params.n_year) + delta_V_SWE(n, tt/control_params.n_year))*params.rho_water*100^3; % (g)
                 
@@ -256,7 +259,7 @@ for n_sim = 1:n_iter;
             
         end % end of elevation band loop
         
-      %% Annual glacier geometry evolution
+        %% Annual glacier geometry evolution
         
         if mod(tt, control_params.n_year) == 0
             
@@ -308,7 +311,7 @@ for n_sim = 1:n_iter;
                 end;
             end;
         end;
-           
+        
         %% Update variables for next time step
         for n = 1:length(elev_bands)
             if SWE_old(n)>0 ||  P_snow(n,tt)>0
@@ -328,14 +331,13 @@ end % end of iterations
 
 disp('Snowflow simulation completed successfully.')
 
-if control_params.Monte_Carlo == 0
     %% Save key outputs
     date_data = control_params.date;
     if ~exist('A_glacier_band', 'var'); A_glacier_band = 0; A_non_glacier_band = 0; end;
     eval(['save ' control_params.output_filename ' control_params date_data Outflow' ' V_glacier_final' ' A_glacier_final' ' delta_V_glacier' ' delta_A_glacier' ...
         ' delta_V_ice' ' delta_M_water' ' delta_V_SWE' ' delta_V_liq' ' Annual_VQ_ice_glacier' ' Annual_VQ_snow_glacier' ' Annual_VP_rain_glacier' ...
         ' VQ_ice_glacier' ' VQ_snow_glacier' ' VP_rain_glacier' ' V_SWE' ' Z1' ' Z2' ' SWE' ' melt_snow' ' melt_ice' ' P_rain' ' P_snow' ' Surface_runoff' ...
-        ' Interflow' ' Baseflow' ' Infiltration' ' Percolation' ' mc' ' Ta' ' PPT' ' Mpot_snow' ' Mpot_ice' ' A_glacier_band' ' A_non_glacier_band' ' Streamflow' ' SWE_reanalysis' ' weights' ' ET' ' Rs'])
+        ' Interflow' ' Baseflow' ' Infiltration' ' Percolation' ' mc' ' Ta' ' PPT' ' Mpot_snow' ' Mpot_ice' ' A_glacier_band' ' A_non_glacier_band' ' Streamflow' ' SWE_reanalysis' ' weights' ' ET' ' Rs' ' glacier'])
     
     disp(['Outputs stored in: '])
     disp([control_params.output_filename])
@@ -354,25 +356,25 @@ if control_params.Monte_Carlo == 0
     box on;
     xlabel('Date');
     ylabel('Streamflow [m^3/s]');
-%    legend Simulated Observed
+    %    legend Simulated Observed
     xlim([datenum(control_params.start_year, 4, 1) datenum(control_params.end_year, 3, 31)]);
-     
-%     subplot(1, 2, 2);
-%     plot(date_data, squeeze(nansum(SWE_model(:, bands_selec), 2)),  'LineStyle', '-', 'Color', [.4 .4 .4], 'LineWidth', 2);
-%     hold on;
-%     datetick;
-%     
-%     if control_params.validation_flag_SWE == 1
-%         plot(date_data, nansum(SWE_reanalysis(bands_selec, :), 1), 'r');
-%     end;
-%     
-%     xlabel('Date');
-%     ylabel('SWE [m]');
-%     legend Simulated Observed
-%     grid on;
-%     box on;
-%     xlim([datenum(control_params.start_year, 4, 1) datenum(control_params.end_year, 3, 31)]);
-     
+    
+    %     subplot(1, 2, 2);
+    %     plot(date_data, squeeze(nansum(SWE_model(:, bands_selec), 2)),  'LineStyle', '-', 'Color', [.4 .4 .4], 'LineWidth', 2);
+    %     hold on;
+    %     datetick;
+    %
+    %     if control_params.validation_flag_SWE == 1
+    %         plot(date_data, nansum(SWE_reanalysis(bands_selec, :), 1), 'r');
+    %     end;
+    %
+    %     xlabel('Date');
+    %     ylabel('SWE [m]');
+    %     legend Simulated Observed
+    %     grid on;
+    %     box on;
+    %     xlim([datenum(control_params.start_year, 4, 1) datenum(control_params.end_year, 3, 31)]);
+    
     subplot(3, 1, 2);
     plot(control_params.start_year:control_params.end_year, A_glacier_final/1000000,  'LineStyle', '-', 'Color', [.4 .4 .4], 'LineWidth', 2);
     hold on
@@ -383,36 +385,36 @@ if control_params.Monte_Carlo == 0
     xlim([control_params.start_year control_params.end_year]);
     set(gca, 'XTick', control_params.start_year:2:control_params.end_year);
     if control_params.glacier_data == 1;
-        scatter(glacier.years+1, glacier.area);
+        scatter(glacier.year_data+1, glacier.area);
     end;
-     
-%     subplot(2, 3, 4);
-%     plot(control_params.start_year:control_params.end_year, delta_V_glacier,  'LineStyle', '-', 'Color', [.4 .4 .4], 'LineWidth', 2);
-%     hold on
-%     xlabel('Year');
-%     ylabel('Delta glacier Volume [m^3]');
-%     grid on;
-%     box on;
-%     xlim([control_params.start_year control_params.end_year]);
-%     set(gca, 'XTick', control_params.start_year:2:control_params.end_year);
-
-     if control_params.validation_flag_SWE == 1
+    
+    %     subplot(2, 3, 4);
+    %     plot(control_params.start_year:control_params.end_year, delta_V_glacier,  'LineStyle', '-', 'Color', [.4 .4 .4], 'LineWidth', 2);
+    %     hold on
+    %     xlabel('Year');
+    %     ylabel('Delta glacier Volume [m^3]');
+    %     grid on;
+    %     box on;
+    %     xlim([control_params.start_year control_params.end_year]);
+    %     set(gca, 'XTick', control_params.start_year:2:control_params.end_year);
+    
+    if control_params.validation_flag_SWE == 1
         subplot(3, 1, 3);
-        n_years = length(SWE_model)./366;
-        aux_SWE_obs = reshape(nansum(SWE_reanalysis, 1), 366, n_years);
+        n_year_data = length(SWE_model)./366;
+        aux_SWE_obs = reshape(nansum(SWE_reanalysis, 1), 366, n_year_data);
         aux_SWE_obs(aux_SWE_obs == 0) = NaN;
         plot(nanmean(aux_SWE_obs, 2), 'r');
         hold on;
         
-        aux_SWE_mod = reshape(nansum(SWE_model, 2), 366, n_years);
+        aux_SWE_mod = reshape(nansum(SWE_model, 2), 366, n_year_data);
         aux_SWE_mod(isnan(aux_SWE_obs)) = NaN;
         plot(nanmean(aux_SWE_mod, 2),  'LineStyle', '-', 'Color', [.4 .4 .4], 'LineWidth', 2);
         hold on;
-     end;
+    end;
     
     
-  %  disp(['savefig(gcf,' control_params.output_filename_fig ');']);
- %   eval(['savefig(gcf,''' control_params.output_filename_fig ''');']);
+    %  disp(['savefig(gcf,' control_params.output_filename_fig ');']);
+    %   eval(['savefig(gcf,''' control_params.output_filename_fig ''');']);
     
     %     figure(2)
     %     for n = 1:1:length(elev_bands);
@@ -428,194 +430,5 @@ if control_params.Monte_Carlo == 0
     %     if control_params.validation_flag_SWE == 1
     %         plot(squeeze(nansum(SWE_reanalysis, 1)), '--k', 'LineWidth', 2);
     %     end;
-else
-    %% FIND OPTIMAL SIMULATION
-    
-    if control_params.Monte_Carlo_SWE == 1
-        
-        SWE_sim = squeeze(nansum(SWE_model, 2)); %Should consider band area!
-        SWE_reanalysis_tot = squeeze(nansum(SWE_reanalysis, 1)); %Should consider band area!
-        
-        for i = 1:n_iter;
-            dif1 = squeeze(SWE_sim(i,:)) - SWE_reanalysis_tot(1,:);
-            dif2 = SWE_reanalysis_tot(1,:) - nanmean(SWE_reanalysis_tot(1,:));
-            dif1_log = log(squeeze(SWE_sim(i,:))) - log(SWE_reanalysis_tot(1,:));
-            dif1_log(isinf(dif1_log)) = NaN;
-            dif2_log = log(SWE_reanalysis_tot(1,:)) - log(nanmean(SWE_reanalysis_tot(1,:)));
-            dif2_log(isinf(dif2_log)) = NaN;
-            
-            bias(i) = nanmean(squeeze(SWE_sim(i,:))-SWE_reanalysis_tot(1,:));
-            NS(i) = 1-nansum(dif1.*dif1)/nansum(dif2.*dif2);
-            NS_log(i) = 1-nansum(dif1_log.*dif1_log)/nansum(dif2_log.*dif2_log);
-        end;
-        
-        [~, best_NS_SWE] = max(NS);
-        % [~, best_NS_SWE] = min(abs(bias));
-        
-        figure(1)
-        subplot(1,2,1);
-        plot(squeeze(SWE_sim(best_NS_SWE,:)));
-        hold on;
-        plot(SWE_reanalysis_tot(1,:),'r');
-        grid on;
-        box on;
-        xlabel('Days since start');
-        ylabel('SWE in m');
-        legend Sim Obs
-        
-        subplot(1,2,2);
-        scatter(SWE_reanalysis_tot(1,:), SWE_sim(best_NS_SWE,:),40,'x','k');
-        xlim([ 0 20]);
-        ylim([0 20]);
-        refline(1,0);
-        refline;
-        grid on;
-        box on;
-        
-        figure(2)
-        % color_plots = {'r'; 'b'; 'k'; 'g'; 'c'; 'y'};
-        count = 1;
-        for n = 1:1:length(elev_bands)
-            plot(squeeze(SWE_model(best_NS_SWE, n, :))./weights(n));
-            hold on;
-            
-            %r plot(SWE_reanalysis(5,:), ['--' color_plots{count}]);
-            count = count + 1;
-        end;
-        %         plot(squeeze(SWE_model(best_NS_SWE,1,:)),':k');
-        %         hold on;
-        %         plot(SWE_reanalysis(1,:),'k');
-        %         plot(squeeze(SWE_model(best_NS_SWE,2,:)),':b');
-        %         plot(SWE_reanalysis(2,:),'b');
-        %         plot(squeeze(SWE_model(best_NS_SWE,3,:)),':m');
-        %         plot(SWE_reanalysis(3,:),'m');
-        %         plot(squeeze(SWE_model(best_NS_SWE,4,:)),':r');
-        %         plot(SWE_reanalysis(4,:),'r');
-        %         plot(squeeze(SWE_model(best_NS_SWE,5,:)),':c');
-        %         plot(SWE_reanalysis(5,:),'c');
-        %         grid on;
-        %         box on;
-        xlabel('Days since start');
-        ylabel('SWE in m');
-        legend Sim Obs
-        
-        % Display optimum SWE parameters:
-        disp('Precipitation scaling coefficient')
-        precip_scaling(best_NS_SWE)
-        disp('Degree-Day-Model snow coef.')
-        a_snow(best_NS_SWE)
-        disp('Degree-Day-Model ice coef.')
-        a_ice(best_NS_SWE)
-        disp('MF coef.')
-        MF(best_NS_SWE)
-        disp('RF snow')
-        RFsnow(best_NS_SWE)
-        disp('RF ice')
-        RFice(best_NS_SWE)
-        disp('Snowmelt temp.')
-        T_snowmelt(best_NS_SWE)
-        disp('Icemelt temp. (K)')
-        T_icemelt(best_NS_SWE)
-        disp('Freezing point (K)')
-        T_S(best_NS_SWE)
-        disp('Melting point (K)')
-        T_L(best_NS_SWE)
-        
-    else
-        flow_sim = squeeze(nansum(Outflow_model, 2))./24./3600;
-        
-        SWE_sim = squeeze(nansum(SWE_model, 2)); %Should consider band area!
-        SWE_reanalysis_tot = squeeze(nansum(SWE_reanalysis, 1)); %Should consider band area!
-        
-        for i=1:n_iter;
-            dif1 = flow_sim(i,:)-Streamflow;
-            dif2 = Streamflow-nanmean(Streamflow);
-            dif1_log = log(flow_sim(i,:))-log(Streamflow);
-            dif2_log = log(Streamflow(:))-log(nanmean(Streamflow));
-            
-            bias(i) = nanmean(flow_sim(i,:)-Streamflow);
-            NS(i) = 1-nansum(dif1.*dif1)/nansum(dif2.*dif2);
-            NS_log(i) = 1-nansum(dif1_log.*dif1_log)/nansum(dif2_log.*dif2_log);
-        end;
-        
-        [~,best_NS_streamflow] = max(NS_log);
-        figure(1)
-        subplot(1,2,1);
-        plot(flow_sim(best_NS_streamflow,:));
-        hold on;
-        plot(Streamflow(1:end),'r');
-        grid on;
-        box on;
-        xlabel('Days since start');
-        ylabel('Streamflow in CMS');
-        legend Sim Obs
-        subplot(1,2,2);
-        scatter(Streamflow(:),flow_sim(best_NS_streamflow,:),40,'x','k');
-        xlim([ 0 20]);
-        ylim([0 20]);
-        refline(1,0);
-        refline;
-        grid on;
-        box on;
-        
-        figure(2)
-        subplot(1,2,1);
-        plot(squeeze(SWE_sim(best_NS_streamflow,:)));
-        hold on;
-        plot(SWE_reanalysis_tot(1,:),'r');
-        
-        grid on;
-        box on;
-        xlabel('Days since start');
-        ylabel('SWE in m');
-        legend Sim Obs
-        subplot(1,2,2);
-        scatter(SWE_reanalysis_tot(1,:),SWE_sim(best_NS_streamflow,:),40,'x','k');
-        xlim([ 0 20]);
-        ylim([0 20]);
-        refline(1,0);
-        refline;
-        grid on;
-        box on;
-        
-        %         figure(3)
-        %         plot(squeeze(SWE_model(best_NS_streamflow,1,:)),':k');
-        %         hold on;
-        %         plot(SWE_reanalysis(1,:),'k');
-        %         plot(squeeze(SWE_model(best_NS_streamflow,2,:)),':b');
-        %         plot(SWE_reanalysis(2,:),'b');
-        %         plot(squeeze(SWE_model(best_NS_streamflow,3,:)),':m');
-        %         plot(SWE_reanalysis(3,:),'m');
-        %         plot(squeeze(SWE_model(best_NS_streamflow,4,:)),':r');
-        %         plot(SWE_reanalysis(4,:),'r');
-        %         plot(squeeze(SWE_model(best_NS_streamflow,5,:)),':c');
-        %         plot(SWE_reanalysis(5,:),'c');
-        %         grid on;
-        %         box on;
-        %         xlabel('Days since start');
-        %         ylabel('SWE in m');
-        %         legend Sim Obs
-        
-        
-        % Display optimum soil parameters:
-        disp('Initial Z1 (-)')
-        Z1_init(best_NS_streamflow)
-        disp('Initial Z2 (-)')
-        Z2_init(best_NS_streamflow)
-        disp('Soil water (rootzone) conductivity (m/day)')
-        K_SW(best_NS_streamflow)
-        disp('Deep water conductivity (m/day)')
-        K_DW(best_NS_streamflow)
-        disp('Prefered flow direcion (1 = horz., 0 = ver.) (-)')
-        f(best_NS_streamflow)
-        disp('Soil water capacity (m)')
-        SW(best_NS_streamflow)
-        disp('Deep water capacity (m)')
-        DW(best_NS_streamflow)
-        disp('Runoff resistance factor (-)')
-        RRF(best_NS_streamflow)
-        
-    end;
-    
-end;
+
 return

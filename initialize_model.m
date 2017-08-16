@@ -12,13 +12,13 @@ else
     glacier.area = NaN;
     glacier.years = NaN;
 end;
-
-dem = dem.*mask;
-res = abs(northing(2)-northing(1)); % should be 30 m
+mask = project_mask;
+dem = project_dem.*project_mask;
+res = abs(project_northing(2)-project_northing(1)); % should be 30 m
 
 % Extract mean latitude and longitude vectors
-X = nanmean(easting);
-Y = nanmean(northing);
+X = nanmean(project_easting);
+Y = nanmean(project_northing);
 [lat, lon] = minvtran(utmstruct,X,Y);
 
 if band_choice == 1; %equal elevation bands
@@ -44,26 +44,31 @@ else %equal area bands
     for n = 1:n_bands
         elev_bands(n) = (elev_threshold(n)+elev_threshold(n+1))*0.5;
     end;
-
+    
 end;
 
 for n = 1:n_bands
     A = find(mask(:) == 1 & dem(:) > elev_threshold(n) & dem(:) <= elev_threshold(n+1));
     A_band(n) = length(A)*res^2; % m^2
     
-    if strcmp(control_params.run, 'historical');
-        G = find(glacier_ini(A) > 0);
-    else
-        if strcmp(control_params.run, 'no_glaciers');
-            G = [];
+    if control_params.glacier_data == 1;
+        if strcmp(control_params.run, 'historical');
+            G = find(glacier_ini(A) > 0);
         else
-            G = find(glacier_fin(A) > 0);
+            if strcmp(control_params.run, 'no_glaciers');
+                G = [];
+            else
+                G = find(glacier_fin(A) > 0);
+            end;
         end;
+        
+        A_glacier(n) = length(G)*res^2;
+        A_non_glacier(n) = A_band(n) - A_glacier(n);
+        
+    else
+        A_glacier(n) = 0;
+        A_non_glacier(n) = A_band(n) - A_glacier(n);
     end;
-
-    A_glacier(n) = length(G)*res^2;
-    A_non_glacier(n) = A_band(n) - A_glacier(n);
-    
     if A_glacier(n)/(A_glacier(n)+A_non_glacier(n))<0.01;
         A_glacier(n) = 0;
         A_non_glacier(n) = A_band(n);

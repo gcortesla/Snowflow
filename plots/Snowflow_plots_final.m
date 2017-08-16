@@ -36,14 +36,14 @@ date_vals_fut = date_ini:date_fin;
 
 clear data_excel*
 
-for b = 1:length(basin_names);
+for b = 1%:length(basin_names);
             clf;
-    for model_n = [2 3 18];
+    for model_n = [3];
         if model_n == 2; m = 1; end;
-        if model_n == 3; m = 2; end;
-        if model_n == 18; m = 3; end;
+        if model_n == 3; m = 1; end;
+        if model_n == 18; m = 1; end;
        
-        subplot(2, 3, m);
+        subplot(2, 1, m);
         filename = [output_dir 'new_RCP85_fut/' basin_names{b} '_RCP85_fut_model_' num2str(model_n) '.mat'];
         load(filename);
         
@@ -92,7 +92,7 @@ for b = 1:length(basin_names);
         mean_daily_flow_obs = nanmean(aux/86400, 2);
         std_daily_flow_obs = nanstd(aux/86400, [], 2);
         
-        boundedline(1:366, mean_daily_flow_hist, [std_daily_flow_hist std_daily_flow_hist], 'k', 'alpha');
+%         boundedline(1:366, mean_daily_flow_hist, [std_daily_flow_hist std_daily_flow_hist], 'k', 'alpha');
         hold on;
         boundedline(1:366, mean_daily_flow_RCP85, [std_daily_flow_RCP85 std_daily_flow_RCP85], 'r', 'alpha');
         boundedline(1:366, mean_daily_flow_obs, [std_daily_flow_obs std_daily_flow_obs], 'b', 'alpha');
@@ -109,7 +109,7 @@ for b = 1:length(basin_names);
         grid on;
         xlim([1 365]);
         
-        subplot(2, 3, m + 3);
+        subplot(2, 1, m + 1);
         vals = 100*(mean_daily_flow_RCP85 - mean_daily_flow_hist)./mean_daily_flow_hist;
         vals(vals>0) = 0;
         area(1:366, vals, 'FaceColor', 'r');
@@ -372,9 +372,26 @@ end;
 %% Monthly comparison with other studies
 
 clf;
-plot(1:12, data(:, 1), 'Color', [0 0 .8], 'LineWidth', 2);
+subplot(3, 1, 1);
+plot(1:12, data(:, 6), 'Color', [0 0 .8], 'LineWidth', 2);
 hold on;
-plot(1:12, data(:, 2), 'Color', [.5 .5 .8], 'LineWidth', 2);
+plot(1:12, data(:, 9), 'Color', [.5 .5 .8], 'LineWidth', 2);
+plot(1:12, data(:, 2), 'Color', [.8 0 0], 'LineWidth', 3, 'LineStyle', '--');
+
+xlabel('Mes del año hidrológico');
+ylabel('QMM [m^3/s]');
+box on;
+grid on;
+xlim([.5 12.5]);
+set(gca, 'XTick', 1:12,'XTickLAbel', {'A';'M';'J';'J';'A';'S';'O';'N';'D';'E';'F';'M'});
+title('CH Azufre');
+legend 'Parot'  'Norconsult'  'UCLA' 
+set(gca,'FontSize', 14);
+
+subplot(3, 1, 2);
+plot(1:12, data(:, 7), 'Color', [0 0 .8], 'LineWidth', 2);
+hold on;
+plot(1:12, data(:, 10), 'Color', [.5 .5 .8], 'LineWidth', 2);
 plot(1:12, data(:, 3), 'Color', [.8 0 0], 'LineWidth', 3, 'LineStyle', '--');
 
 xlabel('Mes del año hidrológico');
@@ -383,8 +400,24 @@ box on;
 grid on;
 xlim([.5 12.5]);
 set(gca, 'XTick', 1:12,'XTickLAbel', {'A';'M';'J';'J';'A';'S';'O';'N';'D';'E';'F';'M'});
+title('CH Damas');
+legend 'Parot'  'Norconsult'  'UCLA' 
+set(gca,'FontSize', 14);
+
+subplot(3, 1, 3);
+plot(1:12, data(:, 8), 'Color', [0 0 .8], 'LineWidth', 2);
+hold on;
+plot(1:12, data(:, 11), 'Color', [.5 .5 .8], 'LineWidth', 2);
+plot(1:12, data(:, 5), 'Color', [.8 0 0], 'LineWidth', 3, 'LineStyle', '--');
+
+xlabel('Mes del año hidrológico');
+ylabel('QMM [m^3/s]');
+box on;
+grid on;
+xlim([.5 12.5]);
+set(gca, 'XTick', 1:12,'XTickLAbel', {'A';'M';'J';'J';'A';'S';'O';'N';'D';'E';'F';'M'});
 title('CH Palacios');
-legend 'Norconsult' 'Parot' 'UCLA'
+legend 'Parot'  'Norconsult'  'UCLA' 
 set(gca,'FontSize', 14);
 
 %% Weibull

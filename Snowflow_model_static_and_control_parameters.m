@@ -1,4 +1,4 @@
-function [control_params,params] = Snowflow_model_static_and_control_parameters(basin, run_sce, scenario, years, flag_SWE, flag_Q, precip_scaling)
+function [control_params, params] = Snowflow_model_static_and_control_parameters(project, basin, run_sce, scenario, years, flag_SWE, flag_Q, precip_scaling)
 % Description: This function contains all static/control parameters needed for a 
 % simulation.
 
@@ -13,20 +13,44 @@ function [control_params,params] = Snowflow_model_static_and_control_parameters(
 % model.
 
 % Specify path to root directory for the WEAP functions
-control_params.toolbox_path = '/Users/gcortes/Dropbox/snowflow/';
+control_params.toolbox_path = '/Users/gcortes/Dropbox/flowmind/app_snowflow/';
+control_params.input_dir = '/Users/gcortes/Dropbox/flowmind/datasets/';
+control_params.project = project; 
+control_params.basin = basin;
+control_params.run = run_sce;
+control_params.scenario = scenario;
+
+% Specify output filename
+control_params.output_filename = [control_params.input_dir control_params.project '/' control_params.basin '_' control_params.scenario '.mat'];
+control_params.output_filename_fig = [control_params.input_dir  control_params.project '/' control_params.basin '_' control_params.scenario '_results.fig'];
 
 % Add path
 addpath(genpath(control_params.toolbox_path))
 
-%Specify basin name
-control_params.basin = basin;
-control_params.run = run_sce;
+%% Specify location of met. data. This assumes there is one met. station for
+% basin and that the time step in the data corresponds to the time step dt 
+% specified above. 
+% The units for the meteorological inputs are assumed as follows:
+% Precipitation:  (mm/day); variable "PPT"
+% Air temp.: (C); variable "Tair"
 
-% Start year of simulation (1988 will start the simulation in Apr 1 1988)            
+control_params.validation_filename_q = [control_params.input_dir '/projects/' control_params.project '/data_hydrometeo/data_q/' control_params.basin '.mat'];
+control_params.dem_filename = [control_params.input_dir '/projects/' control_params.project '/matlab/' control_params.basin '.mat'];
+control_params.met_data_info = [control_params.input_dir '/projects/' control_params.project '/data_hydrometeo/station_data.mat'];
+load(control_params.met_data_info);
+
+control_params.validation_folder_SWE = [control_params.input_dir '/projects/' control_params.project '/data_SWE/' ];
+control_params.met_data_filename_Tair = [control_params.input_dir '/projects/' control_params.project '/data_hydrometeo/tair_' control_params.scenario '.mat'];
+control_params.Ta_gage_elev = station_data.tair_elev;
+control_params.met_data_filename_PPT = [control_params.input_dir '/projects/' control_params.project '/data_hydrometeo/precip_' control_params.scenario '.mat'];
+control_params.glacier_area = [control_params.input_dir '/projects/' control_params.project '/data_glacier/glacier_' control_params.basin '.mat'];
+
+%% Start year of simulation (1988 will start the simulation in Apr 1 1988)      
+
 control_params.start_year = years(1);
 % End year of simulation (1990 will end the simulation in March 31 1991)            
 control_params.end_year = years(2);
-params.band_val = 50;
+params.band_val = 50; %Meters of each band
 control_params.validation_flag_SWE = flag_SWE; %(0 -> no data available)
 control_params.validation_flag_Q = flag_Q;
 control_params.glacier_data = 1;
@@ -65,30 +89,7 @@ end;
 
 control_params.date = date_data;
 
-%% Output/Input Filename Specification
-%specify input directory
-control_params.input_dir = '/Users/gcortes/Dropbox/project_Anpac/';
-% Specify output filename
-control_params.output_filename = ['/Users/gcortes/Dropbox/project_Anpac/test_outputs/' control_params.basin '_' control_params.scenario '.mat'];
-control_params.output_filename_fig = ['/Users/gcortes/Dropbox/project_Anpac/test_outputs/' control_params.basin '_' control_params.scenario '_results.fig'];
-
-%% Specify location of static and glacier data (in meters!!). 
-control_params.dem_filename = [control_params.input_dir 'data_dem/data_' control_params.basin '.mat'];
-
-%% Specify location of met. data. This assumes there is one met. station for
-% basin and that the time step in the data corresponds to the time step dt 
-% specified above. 
-% The units for the meteorological inputs are assumed as follows:
-% Precipitation:  (mm/day); variable "PPT"
-% Air temp.: (C); variable "Tair"
-
-control_params.met_data_filename_Tair = [control_params.input_dir 'data_hydrometeo/data_t/termas_el_flaco_' control_params.scenario '.mat'];
-control_params.Ta_gage_elev = 2650;
-control_params.met_data_filename_PPT = [control_params.input_dir 'data_hydrometeo/data_precip/pp_la_rufina_' control_params.scenario '.mat'];
-control_params.glacier_area = [control_params.input_dir 'data_glacier/glacier_' control_params.basin '.mat'];
-
 %% Specify location of validation data (SWE reanalysis and streamflow)
-
 
 % Do we want to perform a Monte Carlo simulation?
 control_params.Monte_Carlo = 0; % (1 -> yes, 0 -> no)
@@ -99,15 +100,8 @@ control_params.Monte_Carlo = 0; % (1 -> yes, 0 -> no)
 control_params.Monte_Carlo_SWE = 0; 
 control_params.n_iter = 100;
 
-% Streamflow (m3/s)
-control_params.validation_filename_q = [control_params.input_dir 'data_hydrometeo/data_q/' control_params.basin '.mat'];
-
-% SWE (m)
-%control_params.validation_folder_SWE = [control_params.input_dir 'anpac_data/'];
-% control_params.validation_folder_SWE = ['/Volumes/elqui_hd3/PROJECTS/SWE_REANALYSIS/ANDES/anpac_data/'];
-control_params.validation_folder_SWE = [control_params.input_dir 'data_SWE/' ];
- 
 %% Compute additional control parameters
+
 % number of time steps
 control_params.nt = 1./control_params.dt*control_params.n_day;
 % Set index to initialize forcings
@@ -122,7 +116,6 @@ params.time_zone_shift = -5;
 params.UTC = 0-params.time_zone_shift:23-params.time_zone_shift;
 
 %params.n_band = 100 ;
-
 
 % Air properties 
 params.LapseRateTair = -5.2;    % Air temperature lapse rate (K/km) for mountainuous regions
